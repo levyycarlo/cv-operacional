@@ -1,78 +1,50 @@
-# CV Operacional - Levy Carlo Portela Cerqueira
+# CV - Levy Carlo Portela Cerqueira
 
-Currículo profissional interativo com geração de PDF em alta fidelidade.
+Currículo profissional online simples e elegante.
+
+## 🌐 Acesso
+
+**https://levyycarlo.github.io/cv-operacional/**
 
 ## 📋 Características
 
-- **Design Responsivo**: Interface moderna com Tailwind CSS
-- **Fotografia Profissional**: Recorte e gerenciamento de imagem com CropperJS
-- **PDF Programático**: Geração de PDF via jsPDF com paleta de cores otimizada
-- **Modo Offline**: Totalmente funcional sem internet
-- **100% Fiel**: PDF gerado é idêntico ao visualizado no navegador
+- **Design Limpo e Moderno**: Interface profissional com Tailwind CSS
+- **Totalmente Responsivo**: Funciona em desktop, tablet e mobile
+- **Modo Offline**: Sem dependências externas, funciona com internet ou sem
+- **Rápido e Leve**: Carregamento instantâneo
 
-## 🚀 Começar
-
-### Pré-requisitos
-- Node.js 14+
-- Playwright (instalado automaticamente)
-
-### Instalação
+## 🚀 Rodar Localmente
 
 ```bash
-npm install
+# Abrir no navegador
+# file:///seu-caminho/index.html
 ```
 
-### Desenvolvimento
-
-Abrir `cv.html` no navegador para editar e visualizar em tempo real.
-
-### Gerar PDF
-
+Ou com um servidor local (Python):
 ```bash
-node generate-pdf.js
+python -m http.server 8000
+# Depois: http://localhost:8000
 ```
 
-Será criado `CV_Levy_Carlo_Final.pdf` com alta qualidade.
-
-## 📁 Estrutura
+## 📁 Arquivos
 
 ```
 cv_operacional/
-├── cv.html              # HTML/CSS/JS integrado
-├── generate-pdf.js      # Script Playwright para PDF
-├── package.json         # Dependências
-└── README.md           # Este arquivo
+├── index.html           # Seu CV (abrir no navegador)
+├── README.md           # Este arquivo
+└── generate-pdf.js     # Script Playwright para PDF (Node.js)
 ```
-
-## 🎨 Paleta de Cores
-
-| Cor | Uso | RGB |
-|-----|-----|-----|
-| Primary | Sidebar, badges | 79, 109, 122 |
-| Dark | Sidebar escuro | 61, 86, 97 |
-| Accent | Destaques | 155, 193, 210 |
-| Text | Textos principais | 44, 62, 80 |
 
 ## 🔧 Tecnologias
 
-- **HTML5** - Estrutura
-- **Tailwind CSS** - Estilo
-- **Lucide Icons** - Ícones
-- **jsPDF** - Geração PDF (navegador)
-- **Playwright** - Renderização para PDF (Node.js)
-- **CropperJS** - Edição de foto
+- **HTML5 + CSS3** - Estrutura e estilo
+- **Tailwind CSS** - Design system
+- **Lucide Icons** - Ícones modernos
+- **JavaScript Vanilla** - Interatividade
 
-## 📝 Recursos
+## 📝 Editar
 
-- ✓ Editar fotografia profissional
-- ✓ Gerar PDF com um clique
-- ✓ Design limpo e moderno
-- ✓ Totalmente responsivo
-- ✓ Acessível e otimizado
-
-## 💾 Dados
-
-Todos os dados (foto, conteúdo) são armazenados localmente em `localStorage`.
+Abra `index.html` em um editor de texto e modifique o conteúdo conforme necessário.
 
 ## 📄 Licença
 
