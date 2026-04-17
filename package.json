@@ -1,0 +1,20 @@
+{
+  "name": "cv-operacional",
+  "version": "1.0.0",
+  "description": "CV Profissional - Levy Carlo Portela Cerqueira",
+  "main": "generate-pdf.js",
+  "scripts": {
+    "pdf": "node generate-pdf.js"
+  },
+  "keywords": [
+    "cv",
+    "curriculum",
+    "pdf",
+    "playwright"
+  ],
+  "author": "Levy Carlo Portela Cerqueira",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

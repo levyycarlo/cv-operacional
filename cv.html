@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV – Levy Carlo Portela Cerqueira</title>
+
+<!-- Favicon SVG inline (pasta de trabalho / briefcase) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234F6D7A'/%3E%3Crect x='10' y='13' width='12' height='10' rx='2' fill='none' stroke='%239bc1d2' stroke-width='2'/%3E%3Cpath d='M13 13v-2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2' stroke='%239bc1d2' stroke-width='2' fill='none'/%3E%3Cline x1='10' y1='18' x2='22' y2='18' stroke='%239bc1d2' stroke-width='1.5'/%3E%3C/svg%3E">
+
+<!-- CropperJS -->
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- Tailwind + Lucide + Fonts -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; padding: 0 !important; }
+  .shadow-2xl { box-shadow: none !important; }
+  @page { margin: 0; size: A4; }
+}
+
+/* ── Crop Overlay ── */
+#crop-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.82); backdrop-filter: blur(6px);
+  z-index: 10000; align-items: center; justify-content: center; padding: 16px;
+}
+#crop-overlay.active { display: flex; }
+#crop-box {
+  background: #111827; border-radius: 18px; padding: 22px;
+  width: 100%; max-width: 500px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.7); border: 1px solid rgba(255,255,255,.08);
+}
+#crop-box h2 {
+  color:#fff; font-size:15px; font-weight:700; margin:0 0 14px;
+  display:flex; align-items:center; gap:8px;
+}
+#crop-box h2 span { color:#9bc1d2; font-size:12px; font-weight:400; }
+#crop-canvas-wrap {
+  width:100%; height:300px; background:#1f2937;
+  border-radius:10px; overflow:hidden;
+}
+#crop-img { display:block; max-width:100%; }
+.crop-controls { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+.ctrl-row { display:flex; align-items:center; gap:10px; }
+.ctrl-row label { color:#9bc1d2; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; min-width:56px; }
+.ctrl-row input[type=range] { flex:1; height:4px; accent-color:#4F6D7A; cursor:pointer; }
+.ctrl-row .val { color:#9bc1d2; font-size:11px; min-width:36px; text-align:right; }
+.crop-btns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:16px; }
+.cb { padding:10px 6px; border-radius:9px; font-size:12px; font-weight:600; border:none; cursor:pointer; transition:all .18s; text-align:center; }
+.cb:hover { filter:brightness(1.1); transform:translateY(-1px); }
+.cb-cancel { background:#1f2937; color:#9ca3af; }
+.cb-remove { background:#7f1d1d; color:#fca5a5; }
+.cb-apply  { background:#4F6D7A; color:#fff; }
+
+/* ── PDF Toast ── */
+#pdf-toast {
+  display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:#1a2e38; color:#fff; padding:12px 22px; border-radius:50px;
+  font-size:13px; font-weight:600; z-index:9998;
+  box-shadow:0 8px 30px rgba(0,0,0,.4); white-space:nowrap; gap:8px; align-items:center;
+}
+#pdf-toast.show { display:flex; }
+</style>
+</head>
+<body class="bg-gray-200 min-h-screen py-8 px-4 antialiased">
+
+<!-- ═══ CROP MODAL ═══ -->
+<div id="crop-overlay">
+  <div id="crop-box">
+    <h2>✂️ Recorte Profissional <span>— mova, redimensione e ajuste o zoom</span></h2>
+    <div id="crop-canvas-wrap"><img id="crop-img" alt="crop source"></div>
+    <div class="crop-controls">
+      <div class="ctrl-row">
+        <label>🔍 Zoom</label>
+        <input type="range" id="sl-zoom" min="0.1" max="3" step="0.01" value="1">
+        <span class="val" id="lbl-zoom">1.0×</span>
+      </div>
+      <div class="ctrl-row">
+        <label>↔ Rot.</label>
+        <input type="range" id="sl-rotate" min="-45" max="45" step="0.5" value="0">
+        <span class="val" id="lbl-rotate">0°</span>
+      </div>
+    </div>
+    <div class="crop-btns">
+      <button class="cb cb-cancel" id="btn-cancel">✕ Cancelar</button>
+      <button class="cb cb-remove" id="btn-remove">🗑 Remover</button>
+      <button class="cb cb-apply"  id="btn-apply">✔ Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Toast -->
+<div id="pdf-toast">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+    <path d="m9 12 2 2 4-4"/>
+  </svg>
+  <span id="pdf-toast-msg">A gerar PDF…</span>
+</div>
+
+<!-- ═══ CV PAGE ═══ -->
+<div id="cv-page" class="max-w-4xl mx-auto bg-white shadow-2xl flex flex-col md:flex-row min-h-[29.7cm]">
+
+  <!-- SIDEBAR -->
+  <aside class="w-full md:w-80 bg-[#4F6D7A] text-white p-8 flex flex-col">
+
+    <!-- Photo -->
+    <div class="flex justify-center mb-8">
+      <div id="photo-ring"
+           class="relative group w-40 h-40 bg-[#3d5661] border-4 border-[#6a8d9c] rounded-full flex items-center justify-center cursor-pointer overflow-hidden shrink-0"
+           title="Clique para alterar a fotografia">
+        <img id="photo-final" class="absolute inset-0 w-full h-full object-cover hidden" draggable="false" alt="Fotografia">
+        <div id="photo-ph" class="flex flex-col items-center justify-center text-center p-4">
+          <i data-lucide="camera" class="w-8 h-8 mb-2 opacity-70"></i>
+          <span class="text-[10px] uppercase tracking-widest leading-tight opacity-70">Fotografia Profissional</span>
+        </div>
+        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+          <span class="text-[11px] uppercase tracking-wider font-medium text-center px-2">Alterar Foto</span>
+        </div>
+        <input type="file" id="file-input" accept="image/*" class="hidden">
+      </div>
+    </div>
+
+    <!-- Contacto -->
+    <div class="mb-8">
+      <h3 class="text-[13px] font-bold uppercase tracking-[0.2em] mb-4 pb-2 border-b border-[#6a8d9c]">Contacto</h3>
+      <ul class="space-y-3.5">
+        <li class="flex items-start gap-3">
+          <i data-lucide="phone" class="w-4 h-4 mt-0.5 text-[#9bc1d2] shrink-0"></i>
+          <a href="https://wa.me/5571992182994" target="_blank" class="text-[13px] hover:text-[#9bc1d2] transition-colors leading-snug">+55 71 99218-2994</a>
+        </li>
+        <li class="flex items-start gap-3">
+          <i data-lucide="mail" class="w-4 h-4 mt-0.5 text-[#9bc1d2] shrink-0"></i>
+          <a href="mailto:levycrp3@gmail.com" class="text-[13px] hover:text-[#9bc1d2] transition-colors break-all leading-snug">levycrp3@gmail.com</a>
+        </li>
+        <li class="flex items-start gap-3">
+          <i data-lucide="map-pin" class="w-4 h-4 mt-0.5 text-[#9bc1d2] shrink-0"></i>
+          <a href="https://www.google.com/maps/search/Camaçari-BA" target="_blank" class="text-[13px] hover:text-[#9bc1d2] transition-colors leading-snug">Camaçari - BA, Brasil</a>
+        </li>
+        <li class="flex items-start gap-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 text-[#9bc1d2] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>
+          </svg>
+          <a href="https://www.linkedin.com/in/levy-carlo-798497222/" target="_blank" class="text-[13px] hover:text-[#9bc1d2] transition-colors leading-snug">linkedin.com/in/levy-carlo-798497222</a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Competências -->
+    <div class="mb-8">
+      <h3 class="text-[13px] font-bold uppercase tracking-[0.2em] mb-4 pb-2 border-b border-[#6a8d9c]">Competências</h3>
+      <ul class="space-y-2 text-[13px] leading-snug">
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Receção, expedição e gestão básica de materiais e stocks</span></li>
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Conferência, organização e controlo de processos operacionais</span></li>
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Registo de dados operacionais em sistemas e ferramentas digitais</span></li>
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Disponibilidade total para turnos rotativos, fins de semana e feriados</span></li>
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Disponibilidade para Formação Interna (ex.: Operador de Empilhadores)</span></li>
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Trabalho em equipa e colaboração em ambiente dinâmico</span></li>
+        <li class="flex gap-2"><span class="text-[#9bc1d2]">•</span><span>Organização do posto de trabalho e cumprimento de procedimentos internos</span></li>
+      </ul>
+    </div>
+
+    <!-- Idiomas -->
+    <div class="mb-8">
+      <h3 class="text-[13px] font-bold uppercase tracking-[0.2em] mb-4 pb-2 border-b border-[#6a8d9c]">Idiomas</h3>
+      <div class="space-y-4">
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-[13px]">Português • BR</span>
+            <span class="text-[11px] text-[#9bc1d2] font-medium">Nativo</span>
+          </div>
+          <div class="h-1.5 bg-[#3d5661] rounded-full overflow-hidden">
+            <div class="h-full w-full bg-[#9bc1d2] rounded-full"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <span class="text-[13px]">Inglês</span>
+            <span class="text-[11px] text-[#9bc1d2] font-medium">A2</span>
+          </div>
+          <div class="h-1.5 bg-[#3d5661] rounded-full overflow-hidden">
+            <div class="h-full w-1/3 bg-[#9bc1d2] rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobilidade -->
+    <div class="mt-auto">
+      <div class="bg-[#3d5661] rounded-lg p-4 border border-[#6a8d9c]/40">
+        <h4 class="text-[11px] uppercase tracking-widest font-bold mb-2.5 text-[#9bc1d2]">Mobilidade</h4>
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="car" class="w-4 h-4 text-[#9bc1d2]"></i>
+          <span class="text-[13px]">Carta de Condução A/B</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 p-10 bg-white">
+    <header class="border-l-8 border-[#4F6D7A] pl-6 mb-7">
+      <h1 class="text-4xl font-extrabold text-[#2c3e50] uppercase tracking-tight leading-[1.1]">Levy Carlo Portela Cerqueira</h1>
+      <h2 class="text-[17px] text-[#4F6D7A] font-medium mt-2 tracking-wide">Auxiliar de Operações | Logística &amp; Apoio Interno</h2>
+    </header>
+
+    <div class="flex items-center gap-2 text-[12px] text-gray-600 mb-8 bg-gray-50 px-4 py-2.5 rounded-md border border-gray-100">
+      <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+      <span>Disponibilidade imediata para integração em Portugal • Mediante contrato de trabalho</span>
+    </div>
+
+    <!-- Perfil -->
+    <section class="mb-8">
+      <h3 class="flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-widest text-[#2c3e50] mb-3">
+        <i data-lucide="award" class="w-4 h-4 text-[#4F6D7A]"></i> Perfil Pessoal
+      </h3>
+      <p class="text-[13.5px] leading-[1.7] text-gray-700 text-justify">
+        <strong class="font-semibold text-[#2c3e50]">Colaborador dedicado a funções operacionais.</strong>
+        Pontual, organizado e com rápida capacidade de aprendizagem. Habituado ao
+        <strong class="font-semibold text-[#2c3e50]">trabalho por turnos</strong>, ao trabalho em equipa e ao
+        <strong class="font-semibold text-[#2c3e50]">cumprimento rigoroso de normas</strong>.
+        Adapta-se rapidamente a novos processos e ferramentas.
+        <strong class="font-semibold text-[#2c3e50]">Disponibilidade imediata</strong> para integração, com
+        <strong class="font-semibold text-[#2c3e50]">carta de condução A/B</strong>.
+      </p>
+    </section>
+
+    <!-- Experiência -->
+    <section class="mb-9">
+      <h3 class="flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-widest text-[#2c3e50] mb-5">
+        <i data-lucide="briefcase" class="w-4 h-4 text-[#4F6D7A]"></i> Experiência Profissional
+      </h3>
+      <div class="relative border-l-2 border-gray-200 pl-6 ml-2 space-y-7">
+        <div class="relative">
+          <div class="absolute -left-[29px] top-1 w-3 h-3 bg-[#4F6D7A] rounded-full border-2 border-white shadow-sm"></div>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-1.5">
+            <h4 class="font-bold text-[14px] text-[#2c3e50] leading-snug">Apoio Técnico e Gestão Operacional</h4>
+            <span class="text-[11px] font-semibold text-white bg-[#4F6D7A] px-2.5 py-1 rounded leading-none shrink-0">Jun. 2025 – Set. 2025</span>
+          </div>
+          <p class="text-[12px] text-[#4F6D7A] italic mb-2.5 font-medium">Tiban Serviços de Software LTDA • Remoto, Brasil</p>
+          <ul class="text-[13px] text-gray-700 space-y-1.5 list-disc pl-4 marker:text-[#4F6D7A]">
+            <li>Gestão diária de tarefas e controlo de qualidade de sistemas internos</li>
+            <li>Teste de ferramentas e registo de dados com precisão</li>
+            <li>Garantia do cumprimento de prazos em ambiente de equipa</li>
+            <li>Colaboração em ambiente de equipa, com comunicação clara e apoio mútuo</li>
+            <li>Suporte à equipa comercial e atendimento aos clientes</li>
+          </ul>
+        </div>
+        <div class="relative">
+          <div class="absolute -left-[29px] top-1 w-3 h-3 bg-[#4F6D7A] rounded-full border-2 border-white shadow-sm"></div>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 mb-1.5">
+            <h4 class="font-bold text-[14px] text-[#2c3e50] leading-snug">Apoio a Processos Internos</h4>
+            <span class="text-[11px] font-semibold text-white bg-[#4F6D7A] px-2.5 py-1 rounded leading-none shrink-0">Maio 2023 – Abr. 2025</span>
+          </div>
+          <p class="text-[12px] text-[#4F6D7A] italic mb-2.5 font-medium">Câmara Municipal de Camaçari – Centro de Tecnologia da Saúde • Camaçari, BA</p>
+          <ul class="text-[13px] text-gray-700 space-y-1.5 list-disc pl-4 marker:text-[#4F6D7A]">
+            <li>Suporte técnico e verificação de funcionamento dos sistemas, garantindo estabilidade e correção de incidentes.</li>
+            <li>Atuação na manutenção e apoio a bases de dados estruturadas, contribuindo para a integridade e organização das informações.</li>
+            <li>Registo e organização de informações operacionais e relatórios internos para apoio aos processos administrativos.</li>
+            <li>Análise de problemas técnicos, levantamento de requisitos e suporte aos utilizadores na utilização dos sistemas desenvolvidos.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Formação -->
+    <section class="mb-10">
+      <h3 class="flex items-center gap-2.5 text-[14px] font-bold uppercase tracking-widest text-[#2c3e50] mb-4">
+        <i data-lucide="graduation-cap" class="w-4 h-4 text-[#4F6D7A]"></i> Formação Académica
+      </h3>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#4F6D7A]/30 hover:shadow-sm transition-all">
+          <h4 class="font-bold text-[13px] text-[#2c3e50] mb-1">Ensino Secundário Completo (Brasil)</h4>
+          <p class="text-[12px] text-gray-600">Concluído • 2021</p>
+        </div>
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#4F6D7A]/30 hover:shadow-sm transition-all">
+          <h4 class="font-bold text-[13px] text-[#2c3e50] mb-1">Licenciatura em Ciência da Computação</h4>
+          <p class="text-[11px] text-gray-500 mb-1">Unijorge • Ago. 2022 – Fev. 2026</p>
+          <p class="text-[12px] text-gray-600">Frequência universitária interrompida no 7.º semestre</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer CV -->
+    <div class="border-t border-gray-200 pt-4 flex flex-wrap gap-x-6 gap-y-2 text-[11px] text-gray-500 uppercase tracking-wider font-medium">
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-[#4F6D7A] rounded-full"></span> Disponibilidade Imediata</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-[#4F6D7A] rounded-full"></span> Prontidão Operacional</span>
+      <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 bg-[#4F6D7A] rounded-full"></span> Portugal</span>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ FLOATING BUTTONS ═══ -->
+<div class="fixed bottom-8 right-8 flex flex-col gap-3 no-print z-40">
+  <button id="btn-pdf" class="group flex items-center bg-[#b91c1c] hover:bg-[#991b1b] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-12 w-12 hover:w-[148px]" title="Gerar PDF">
+    <span class="flex items-center justify-center w-12 h-12 shrink-0"><i data-lucide="file-down" class="w-5 h-5"></i></span>
+    <span class="whitespace-nowrap pr-5 text-[13px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">Gerar PDF</span>
+  </button>
+  <button data-ai="carta" class="ai-btn group flex items-center bg-[#2c3e50] hover:bg-[#1e2a36] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-12 w-12 hover:w-[210px]">
+    <span class="flex items-center justify-center w-12 h-12 shrink-0"><i data-lucide="message-square" class="w-5 h-5"></i></span>
+    <span class="whitespace-nowrap pr-5 text-[13px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">Carta de Apresentação</span>
+  </button>
+  <button data-ai="vaga" class="ai-btn group flex items-center bg-[#4F6D7A] hover:bg-[#435d68] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-12 w-12 hover:w-[165px]">
+    <span class="flex items-center justify-center w-12 h-12 shrink-0"><i data-lucide="target" class="w-5 h-5"></i></span>
+    <span class="whitespace-nowrap pr-5 text-[13px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">Analisar Vaga</span>
+  </button>
+  <button data-ai="entrevista" class="ai-btn group flex items-center bg-[#3d5661] hover:bg-[#324751] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-12 w-12 hover:w-[185px]">
+    <span class="flex items-center justify-center w-12 h-12 shrink-0"><i data-lucide="file-text" class="w-5 h-5"></i></span>
+    <span class="whitespace-nowrap pr-5 text-[13px] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">Simular Entrevista</span>
+  </button>
+</div>
+
+<!-- ═══ AI MODAL ═══ -->
+<div id="ai-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden no-print">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div class="flex items-center justify-between p-5 border-b border-gray-100">
+      <h3 id="ai-title" class="text-[17px] font-bold text-[#2c3e50]">✨ Gerador de Carta</h3>
+      <button id="ai-close" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <label class="text-[12px] font-semibold uppercase tracking-wider text-gray-600 mb-2 block">Descrição da Vaga</label>
+      <textarea id="ai-input" rows="5" placeholder="Cole aqui a descrição completa da vaga para personalizar a resposta..."
+        class="w-full border border-gray-300 rounded-xl p-3.5 text-[14px] focus:ring-2 focus:ring-[#4F6D7A]/30 focus:border-[#4F6D7A] outline-none resize-none transition-all"></textarea>
+      <button id="ai-process" class="mt-4 w-full bg-[#4F6D7A] hover:bg-[#3d5661] text-white font-semibold py-3 rounded-xl transition-all text-[14px] flex items-center justify-center gap-2">
+        <span>Processar com IA</span><i data-lucide="sparkles" class="w-4 h-4"></i>
+      </button>
+      <div id="ai-output" class="mt-6 hidden">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[12px] font-semibold uppercase tracking-wider text-gray-600">Resultado</div>
+          <button id="ai-copy" class="text-[12px] text-[#4F6D7A] hover:text-[#2c3e50] font-medium flex items-center gap-1.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i><span>Copiar texto</span>
+          </button>
+        </div>
+        <div id="ai-result" class="bg-gray-50 border border-gray-200 rounded-xl p-4 text-[13.5px] leading-[1.65] text-gray-800 whitespace-pre-wrap"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   MAIN INIT
+════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function () {
+  lucide.createIcons();
+  initPhoto();
+  initPDF();
+  initAI();
+});
+
+/* ════════════════════════════════════════════════════════════
+   PHOTO / CROPPER
+   FIX: canvas é preenchido com fundo branco ANTES do clip
+   circular, garantindo JPEG sem alpha preto no PDF.
+════════════════════════════════════════════════════════════ */
+function initPhoto() {
+  var ring      = document.getElementById('photo-ring');
+  var fileInput = document.getElementById('file-input');
+  var imgFinal  = document.getElementById('photo-final');
+  var imgPH     = document.getElementById('photo-ph');
+  var overlay   = document.getElementById('crop-overlay');
+  var cropEl    = document.getElementById('crop-img');
+  var slZoom    = document.getElementById('sl-zoom');
+  var slRot     = document.getElementById('sl-rotate');
+  var lblZoom   = document.getElementById('lbl-zoom');
+  var lblRot    = document.getElementById('lbl-rotate');
+  var btnApply  = document.getElementById('btn-apply');
+  var btnCancel = document.getElementById('btn-cancel');
+  var btnRemove = document.getElementById('btn-remove');
+  var STORE_KEY = 'cv_photo_v5';
+  var cropper   = null;
+
+  /* restore */
+  try {
+    var saved = localStorage.getItem(STORE_KEY);
+    if (saved) { setPhoto(saved); }
+  } catch(e) {}
+
+  ring.addEventListener('click', function () { fileInput.click(); });
+
+  fileInput.addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    this.value = '';
+    var reader = new FileReader();
+    reader.onload = function (ev) { openModal(ev.target.result); };
+    reader.readAsDataURL(file);
+  });
+
+  function openModal(src) {
+    killCropper();
+    slZoom.value = '1'; lblZoom.textContent = '1.0×';
+    slRot.value  = '0'; lblRot.textContent  = '0°';
+    cropEl.src   = src;
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    function boot() {
+      killCropper();
+      cropper = new Cropper(cropEl, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 0.85,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+        guides: true,
+        center: true,
+        background: true,
+        responsive: true,
+        checkOrientation: true,
+        ready: function () {
+          var cd   = cropper.getCanvasData();
+          var natW = cropEl.naturalWidth || 1;
+          var z    = Math.round((cd.width / natW) * 10) / 10;
+          slZoom.value = Math.min(3, Math.max(0.1, z));
+          lblZoom.textContent = parseFloat(slZoom.value).toFixed(1) + '×';
+        }
+      });
+    }
+
+    if (cropEl.complete && cropEl.naturalWidth > 0) { boot(); }
+    else { cropEl.onload = boot; }
+  }
+
+  slZoom.addEventListener('input', function () {
+    if (!cropper) return;
+    var v = parseFloat(this.value);
+    cropper.zoomTo(v);
+    lblZoom.textContent = v.toFixed(1) + '×';
+  });
+
+  slRot.addEventListener('input', function () {
+    if (!cropper) return;
+    var d = parseFloat(this.value);
+    cropper.rotateTo(d);
+    lblRot.textContent = d + '°';
+  });
+
+  btnApply.addEventListener('click', function () {
+    if (!cropper) return;
+
+    /* Obter o canvas recortado do Cropper (quadrado, sem clip) */
+    var raw = cropper.getCroppedCanvas({
+      width: 800, height: 800,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: 'high'
+      /* NÃO definir fillColor aqui – fazemos manualmente abaixo */
+    });
+    if (!raw) { alert('Erro ao exportar imagem.'); return; }
+
+    /*
+     * FIX FUNDO PRETO NO PDF:
+     * 1. Criar canvas 800×800
+     * 2. Preencher com BRANCO sólido
+     * 3. Clipar em círculo
+     * 4. Desenhar a imagem recortada
+     * → resultado: JPEG sem canal alpha, fundo branco em vez de preto
+     */
+    var c   = document.createElement('canvas');
+    c.width = c.height = 800;
+    var ctx = c.getContext('2d');
+
+    /* ① fundo branco (cobre qualquer transparência antes do clip) */
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 800, 800);
+
+    /* ② clip circular */
+    ctx.beginPath();
+    ctx.arc(400, 400, 400, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+
+    /* ③ imagem sobre fundo branco já clipado */
+    ctx.drawImage(raw, 0, 0, 800, 800);
+
+    /* ④ exportar como JPEG (sem alpha) – garante compatibilidade total jsPDF */
+    var data = c.toDataURL('image/jpeg', 0.96);
+    setPhoto(data);
+    try { localStorage.setItem(STORE_KEY, data); } catch(e) {}
+    closeModal();
+  });
+
+  btnCancel.addEventListener('click', closeModal);
+
+  btnRemove.addEventListener('click', function () {
+    imgFinal.src = '';
+    imgFinal.classList.add('hidden');
+    imgPH.classList.remove('hidden');
+    try { localStorage.removeItem(STORE_KEY); } catch(e) {}
+    closeModal();
+  });
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) closeModal();
+  });
+
+  function closeModal() {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+    killCropper();
+    cropEl.src = '';
+    cropEl.onload = null;
+  }
+
+  function killCropper() {
+    if (cropper) { cropper.destroy(); cropper = null; }
+  }
+
+  function setPhoto(src) {
+    imgFinal.src = src;
+    imgFinal.classList.remove('hidden');
+    imgPH.classList.add('hidden');
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   PDF — PROGRAMMATIC jsPDF — Alta Fidelidade
+   Layout espelha fielmente o HTML: sidebar #4F6D7A + main branco
+════════════════════════════════════════════════════════════ */
+function initPDF() {
+  var btnPDF   = document.getElementById('btn-pdf');
+  var toast    = document.getElementById('pdf-toast');
+  var toastMsg = document.getElementById('pdf-toast-msg');
+
+  btnPDF.addEventListener('click', function () {
+    btnPDF.disabled = true;
+    btnPDF.style.opacity = '0.6';
+    showToast('A construir PDF…', false);
+    setTimeout(buildPDF, 80);
+  });
+
+  function showToast(msg, hide) {
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    if (hide) setTimeout(function () { toast.classList.remove('show'); }, 3800);
+  }
+
+  function buildPDF() {
+    try {
+      var doc = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      /* ── Paleta ── */
+      var C = {
+        primary  : [79,  109, 122],  /* #4F6D7A - principal */
+        dark     : [61,  86,  97],   /* #3d5661 - sidebar escuro */
+        accent   : [155, 193, 210],  /* #9bc1d2 - accent */
+        border   : [106, 141, 156],  /* #6a8d9c - borders */
+        text     : [44,  62,  80],   /* #2c3e50 - texto main */
+        white    : [255, 255, 255],
+        grayBg   : [248, 249, 250],  /* #f8f9fa */
+        grayBrd  : [209, 213, 219],  /* #d1d5db */
+        grayMid  : [107, 114, 128],  /* #6b7280 */
+        grayTxt  : [75,  85,  99],   /* #4b5563 */
+        green    : [34,  197, 94]    /* #22c55e */
+      };
+      
+      /* ── Dimensões A4 ── */
+      var PW = 210, PH = 297;
+      var SW = 68;        /* sidebar width */
+      var MX = SW;        /* main area X start */
+      var MW = PW - SW;   /* main area width */
+
+      /* ── Utilitários ── */
+      function setFill(a) { doc.setFillColor(a[0], a[1], a[2]); }
+      function setDraw(a) { doc.setDrawColor(a[0], a[1], a[2]); }
+      function setTxt(a)  { doc.setTextColor(a[0], a[1], a[2]); }
+      function setFont(style, size) { doc.setFont('helvetica', style); doc.setFontSize(size); }
+
+      /* ════ SIDEBAR BACKGROUND ════ */
+      setFill(C.primary);
+      doc.rect(0, 0, SW, PH, 'F');
+
+      /* ════ FOTO ════ */
+      var photoEl  = document.getElementById('photo-final');
+      var hasPhoto = !photoEl.classList.contains('hidden') && photoEl.src && photoEl.src.length > 50;
+      var pR  = 17;   /* raio mm */
+      var pCX = SW / 2;
+      var pCY = 22;
+
+      if (hasPhoto) {
+        /*
+         * FIX DEFINITIVO — cantos brancos no PDF:
+         * O jsPDF não suporta clipping, então a imagem JPEG quadrada
+         * fica com cantos visíveis sobre o fundo sidebar.
+         *
+         * Solução: gerar num canvas off-screen uma imagem circular
+         * com fundo exatamente na cor do sidebar [79,109,122] = #4F6D7A.
+         * Assim os "cantos" ficam invisíveis pois têm a mesma cor do fundo.
+         */
+        try {
+          /* Canvas off-screen com fundo cor sidebar → cantos JPEG invisíveis no PDF */
+          var sz   = 800;
+          var oc   = document.createElement('canvas');
+          oc.width = oc.height = sz;
+          var octx = oc.getContext('2d');
+          /* fundo = cor exata do sidebar, cantos ficam invisíveis */
+          octx.fillStyle = 'rgb(79,109,122)';
+          octx.fillRect(0, 0, sz, sz);
+          /* clip circular */
+          octx.save();
+          octx.beginPath();
+          octx.arc(sz/2, sz/2, sz/2 - 2, 0, Math.PI * 2);
+          octx.closePath();
+          octx.clip();
+          /* photoEl já está no DOM carregado — drawImage síncrono */
+          octx.drawImage(photoEl, 0, 0, sz, sz);
+          octx.restore();
+          /* anel accent sobre o círculo */
+          octx.strokeStyle = 'rgb(155,193,210)';
+          octx.lineWidth   = 16;
+          octx.beginPath();
+          octx.arc(sz/2, sz/2, sz/2 - 10, 0, Math.PI * 2);
+          octx.stroke();
+          var photoDataURL = oc.toDataURL('image/jpeg', 0.96);
+          doc.addImage(photoDataURL, 'JPEG', pCX - pR, pCY - pR, pR * 2, pR * 2);
+        } catch(e) {
+          console.warn('Foto PDF:', e);
+          /* fallback placeholder */
+          setFill(C.dark);
+          doc.circle(pCX, pCY, pR, 'F');
+          setDraw(C.accent);
+          doc.setLineWidth(0.7);
+          doc.circle(pCX, pCY, pR, 'S');
+        }
+      } else {
+        /* placeholder */
+        setFill(C.dark);
+        doc.circle(pCX, pCY, pR, 'F');
+        setDraw(C.accent);
+        doc.setLineWidth(0.5);
+        doc.circle(pCX, pCY, pR, 'S');
+        setFont('bold', 5.5);
+        setTxt(C.accent);
+        doc.text('FOTOGRAFIA', pCX, pCY - 1.5, { align: 'center' });
+        doc.text('PROFISSIONAL', pCX, pCY + 2.5, { align: 'center' });
+      }
+
+      /* ════ SIDEBAR CONTEÚDO ════ */
+      var sY = pCY + pR + 8;
+      var sL = 5;
+      var sW = SW - 10; /* largura útil sidebar */
+
+      function sTitle(label) {
+        setFont('bold', 6.5);
+        setTxt(C.white);
+        doc.text(label, sL, sY);
+        setDraw(C.border);
+        doc.setLineWidth(0.22);
+        doc.line(sL, sY + 1.3, SW - sL, sY + 1.3);
+        sY += 6;
+      }
+
+      /* ── CONTACTO ── */
+      sTitle('CONTACTO');
+
+      var contacts = [
+        { t: '+55 71 99218-2994',            url: 'https://wa.me/5571992182994' },
+        { t: 'levycrp3@gmail.com',            url: 'mailto:levycrp3@gmail.com' },
+        { t: 'Camaçari - BA, Brasil',         url: 'https://www.google.com/maps/search/Camacari-BA' },
+        { t: 'linkedin.com/in/levy-carlo-798497222', url: 'https://www.linkedin.com/in/levy-carlo-798497222' }
+      ];
+
+      contacts.forEach(function (c) {
+        setFont('normal', 7);
+        setTxt(C.accent);
+        doc.text('\u2022', sL, sY);
+        setTxt(C.white);
+        /* quebrar linha se necessário */
+        var lines = doc.splitTextToSize(c.t, sW - 6);
+        lines.forEach(function (l, i) {
+          doc.text(l, sL + 4, sY + i * 3.9);
+        });
+        /* link sobre a primeira linha */
+        var tw = Math.min(doc.getTextWidth(c.t), sW - 6);
+        doc.link(sL + 4, sY - 2.8, tw, 3.6, { url: c.url });
+        sY += lines.length * 3.9 + 1.5;
+      });
+
+      sY += 3;
+
+      /* ── COMPETÊNCIAS ── */
+      sTitle('COMPETENCIAS');
+
+      var skills = [
+            'Receção, expedição e gestão básica de materiais e stocks',
+            'Conferência, organização e controlo de processos operacionais',
+            'Registo de dados operacionais em sistemas digitais',
+            'Disponibilidade para turnos rotativos, fins de semana e feriados',
+            'Disponibilidade para Formação Interna (ex.: Operador de Empilhadores)',
+            'Trabalho em equipa em ambiente dinâmico',
+            'Organização do posto e cumprimento de procedimentos internos'
+        ];
+
+      skills.forEach(function (s) {
+        setFont('normal', 6.6);
+        setTxt(C.accent);
+        doc.text('\u2022', sL, sY);
+        setTxt(C.white);
+        var lines = doc.splitTextToSize(s, sW - 5);
+        lines.forEach(function (l, i) {
+          doc.text(l, sL + 4, sY + i * 3.7);
+        });
+        sY += lines.length * 3.7 + 1.4;
+      });
+
+      sY += 3;
+
+      /* ── IDIOMAS ── */
+      sTitle('IDIOMAS');
+
+      function langBar(name, label, pct) {
+        setFont('normal', 7);
+        setTxt(C.white);
+        doc.text(name, sL, sY);
+        setFont('bold', 6.5);
+        setTxt(C.accent);
+        doc.text(label, SW - sL, sY, { align: 'right' });
+        sY += 3;
+        /* track */
+        setFill(C.dark);
+        doc.roundedRect(sL, sY, sW, 2, 1, 1, 'F');
+        /* fill */
+        setFill(C.accent);
+        doc.roundedRect(sL, sY, sW * pct, 2, 1, 1, 'F');
+        sY += 7;
+      }
+
+      langBar('Portugues  \u2022  BR', 'Nativo', 1.0);
+      langBar('Ingles', 'A2', 0.33);
+
+      sY += 2;
+
+      /* ── MOBILIDADE ── */
+      setFill(C.dark);
+      doc.roundedRect(sL - 1, sY, SW - (sL - 1) * 2, 15, 2, 2, 'F');
+      setDraw(C.border);
+      doc.setLineWidth(0.22);
+      doc.roundedRect(sL - 1, sY, SW - (sL - 1) * 2, 15, 2, 2, 'S');
+      setFont('bold', 6);
+      setTxt(C.accent);
+      doc.text('MOBILIDADE', sL + 1, sY + 4.5);
+      setFont('normal', 7.5);
+      setTxt(C.white);
+      doc.text('Carta de Conducao A/B', sL + 1, sY + 10.5);
+
+      /* ════ MAIN AREA ════ */
+      var mPad = 8;           /* padding interno main */
+      var mX   = MX + mPad;  /* x base conteúdo main */
+      var mXr  = PW - 6;     /* margem direita */
+      var mWu  = mXr - mX;   /* largura útil main */
+      var mY   = 10;
+
+      /* ── Barra lateral do cabeçalho ── */
+      setFill(C.primary);
+      doc.rect(MX + 2, mY - 0.5, 2.8, 22, 'F');
+
+      /* ── Nome ── */
+      setFont('bold', 17);
+      setTxt(C.text);
+      doc.text('LEVY CARLO', mX + 5, mY + 7);
+      doc.text('PORTELA CERQUEIRA', mX + 5, mY + 15);
+
+      /* ── Cargo ── */
+      setFont('normal', 8.5);
+      setTxt(C.primary);
+      doc.text('Auxiliar de Operações | Logística & Apoio Interno', mX + 5, mY + 21.5);
+
+      mY += 28;
+
+      /* ── Badge disponibilidade ── */
+      setFill(C.grayBg);
+      setDraw(C.grayBrd);
+      doc.setLineWidth(0.18);
+      doc.roundedRect(mX + 3, mY, mWu - 3, 7.5, 1.5, 1.5, 'FD');
+      /* ponto verde */
+      setFill(C.green);
+      doc.circle(mX + 8.5, mY + 3.75, 1.3, 'F');
+      setFont('normal', 7);
+      setTxt(C.grayMid);
+      doc.text(
+        'Disponibilidade imediata para integracao em Portugal  \u2022  Mediante contrato de trabalho',
+        mX + 12, mY + 4.5
+      );
+      mY += 12.5;
+
+      /* ── helper: título de secção main ── */
+      function mTitle(label) {
+        setFont('bold', 7.5);
+        setTxt(C.text);
+        doc.text(label, mX + 3, mY);
+        setDraw(C.grayBrd);
+        doc.setLineWidth(0.18);
+        doc.line(mX + 3, mY + 1.6, mXr, mY + 1.6);
+        mY += 7;
+      }
+
+      /* ════ PERFIL PESSOAL ════ */
+      mTitle('PERFIL PESSOAL');
+      setFont('normal', 7.5);
+      setTxt(C.grayTxt);
+      var perfilTxt = 'Colaborador dedicado a funções operacionais. Pontual, organizado e com rápida capacidade de aprendizagem. Habituado ao trabalho por turnos, ao trabalho em equipa e ao cumprimento rigoroso de normas. Adapta-se rapidamente a novos processos e ferramentas. Disponibilidade imediata para integração em Portugal, com carta de condução A/B.';
+      var perfilLines = doc.splitTextToSize(perfilTxt, mWu - 3);
+      perfilLines.forEach(function (l) { doc.text(l, mX + 3, mY); mY += 4.3; });
+      mY += 4;
+
+      /* ════ EXPERIÊNCIA PROFISSIONAL ════ */
+      mTitle('EXPERIÊNCIA PROFISSIONAL');
+
+      /* linha de timeline */
+      var tlX = mX + 3.5;
+      var tlYstart = mY;
+
+      function jobEntry(title, badge, company, bullets) {
+        /* dot */
+        setFill(C.primary);
+        doc.circle(tlX, mY - 0.5, 1.5, 'F');
+
+        /* título */
+        setFont('bold', 8);
+        setTxt(C.text);
+        doc.text(title, tlX + 5, mY);
+
+        /* badge (tag colorida) */
+        setFont('bold', 5.8);
+        var bW = doc.getTextWidth(badge) + 5;
+        setFill(C.primary);
+        doc.roundedRect(mXr - bW, mY - 4.2, bW, 5.5, 1, 1, 'F');
+        setTxt(C.white);
+        doc.text(badge, mXr - bW / 2, mY - 0.8, { align: 'center' });
+
+        mY += 4.5;
+
+        /* empresa */
+        setFont('italic', 6.8);
+        setTxt(C.primary);
+        doc.text(company, tlX + 5, mY);
+        mY += 5.5;
+
+        /* bullets */
+        bullets.forEach(function (b) {
+          setFill(C.primary);
+          doc.circle(tlX + 4, mY - 1, 0.9, 'F');
+          setFont('normal', 7);
+          setTxt(C.grayTxt);
+          var lines = doc.splitTextToSize(b, mWu - 14);
+          lines.forEach(function (l, i) {
+            doc.text(l, tlX + 7, mY + i * 4);
+          });
+          mY += lines.length * 4 + 1.5;
+        });
+        mY += 5;
+      }
+
+      /* linha vertical timeline */
+      setDraw(C.grayBrd);
+      doc.setLineWidth(0.3);
+      var tlYend = mY; /* será desenhada depois de calcular */
+
+      var mYbeforeJobs = mY;
+
+      jobEntry(
+        'Apoio Tecnico e Gestao Operacional',
+        'Jun. 2025 \u2013 Set. 2025',
+        'Tiban Servicos de Software LTDA  \u2022  Remoto, Brasil',
+        [
+          'Gestão diária de tarefas e controlo de qualidade de sistemas internos',
+          'Teste de ferramentas e registo de dados com precisão',
+          'Garantia do cumprimento de prazos em ambiente de equipa',
+          'Colaboração em equipa, com comunicação clara e apoio mútuo',
+          'Suporte à equipa comercial e atendimento aos clientes'
+        ]
+      );
+
+       jobEntry(
+            'Apoio a Processos Internos',
+            'Maio 2023 \u2013 Abr. 2025',
+            'Câmara Municipal de Camaçari \u2013 Centro de Tecnologia da Saúde \u2022 Camaçari, BA',
+            [
+                'Suporte técnico e verificação de funcionamento dos sistemas, garantindo estabilidade.',
+                'Manutenção e apoio a bases de dados estruturadas, contribuindo para a integridade das informações.',
+                'Registo e organização de informações operacionais e relatórios internos.',
+                'Análise de problemas técnicos e suporte aos utilizadores na utilização dos sistemas.'
+            ]
+        );
+
+      /* desenhar linha de timeline retroativamente */
+      setDraw(C.grayBrd);
+      doc.setLineWidth(0.3);
+      doc.line(tlX, mYbeforeJobs, tlX, mY - 9);
+
+      /* ════ FORMAÇÃO ACADÉMICA ════ */
+      mTitle('FORMAÇÃO ACADÉMICA');
+
+      var cardW = (mWu - 8) / 2;
+      var cardH = 16.5;
+
+      function formCard(title, sub1, sub2, cx) {
+        setFill(C.white);
+        setDraw(C.grayBrd);
+        doc.setLineWidth(0.18);
+        doc.roundedRect(cx, mY, cardW, cardH, 2, 2, 'FD');
+        setFont('bold', 7.5);
+        setTxt(C.text);
+        var titleLines = doc.splitTextToSize(title, cardW - 6);
+        titleLines.forEach(function (l, i) {
+          doc.text(l, cx + 3.5, mY + 5.5 + i * 4.5);
+        });
+        var subY = mY + 5.5 + titleLines.length * 4.5 + 1;
+        setFont('normal', 6.5);
+        setTxt(C.grayMid);
+        doc.text(sub1, cx + 3.5, subY);
+        if (sub2) {
+          setFont('italic', 6);
+          setTxt(C.grayMid);
+          doc.text(sub2, cx + 3.5, subY + 4);
+        }
+      }
+
+      formCard(
+            'Ensino Secundário Completo (Brasil)',
+            'Concluído  \u2022  2021',
+            '',
+            mX + 3
+        );
+        formCard(
+            'Licenciatura em Ciência da Computação',
+            'Unijorge \u2022 Ago. 2022 \u2013 Fev. 2026',
+            '7.º semestre (interrompido)',
+            mX + 3 + cardW + 4
+        );
+
+      mY += cardH + 6;
+
+      /* ── FOOTER ── */
+      setDraw(C.grayBrd);
+      doc.setLineWidth(0.18);
+      doc.line(mX + 3, mY, mXr, mY);
+      mY += 4.5;
+
+      var tags = ['Disponibilidade Imediata', 'Prontidão Operacional', 'Portugal'];
+      var tx = mX + 3;
+      tags.forEach(function (t) {
+        setFill(C.primary);
+        doc.circle(tx + 1.5, mY - 0.8, 1.2, 'F');
+        setFont('bold', 5.8);
+        setTxt(C.grayMid);
+        doc.text(t.toUpperCase(), tx + 4.5, mY);
+        tx += doc.getTextWidth(t.toUpperCase()) + 11;
+      });
+
+      /* ── SALVAR ── */
+      doc.save('CV-Levy-Carlo-Portela-Cerqueira.pdf');
+
+      btnPDF.disabled = false;
+      btnPDF.style.opacity = '';
+      showToast('\u2714 PDF guardado com sucesso!', true);
+
+    } catch(err) {
+      console.error('PDF Error:', err);
+      btnPDF.disabled = false;
+      btnPDF.style.opacity = '';
+      showToast('Erro ao gerar PDF. Tente novamente.', true);
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   AI MODAL
+════════════════════════════════════════════════════════════ */
+function initAI() {
+  var modal    = document.getElementById('ai-modal');
+  var aiTitle  = document.getElementById('ai-title');
+  var aiInput  = document.getElementById('ai-input');
+  var aiProcess= document.getElementById('ai-process');
+  var aiOutput = document.getElementById('ai-output');
+  var aiResult = document.getElementById('ai-result');
+  var aiClose  = document.getElementById('ai-close');
+  var aiCopy   = document.getElementById('ai-copy');
+  var cropOv   = document.getElementById('crop-overlay');
+
+  var titles = {
+    carta:      '✨ Gerador de Carta de Apresentação',
+    vaga:       '✨ Analisador de Vaga',
+    entrevista: '✨ Simulação de Entrevista'
+  };
+
+  var responses = {
+    carta: 'Exmo.(a) Senhor(a) Responsável pelo Recrutamento,\n\nÉ com grande interesse que apresento a minha candidatura à posição de Auxiliar de Operações. Sou o Levy Carlo Portela Cerqueira, profissional com experiência prática e comprovada em logística interna, gestão de stocks, conferência e expedição de mercadorias.\n\nDurante a minha trajetória profissional, desenvolvi competências sólidas em:\n• Recebimento, armazenagem e organização de armazém (FIFO/FEFO)\n• Separação e expedição de pedidos com máxima precisão\n• Controlo de inventário e apoio administrativo operacional\n• Trabalho em equipa sob pressão e cumprimento de prazos\n\nSou reconhecido pela rápida adaptação a novos processos, proatividade e forte sentido de responsabilidade. Encontro-me atualmente com disponibilidade imediata para integração em Portugal, ao abrigo do visto CPLP, e possuo carta de condução categorias A/B para total mobilidade.\n\nFicaria grato pela oportunidade de uma entrevista.\n\nCom os melhores cumprimentos,\nLevy Carlo Portela Cerqueira\n+55 71 99218-2994 | levycrp3@gmail.com',
+    vaga: 'ANÁLISE DE COMPATIBILIDADE: 94% MATCH ✅\n\nPRINCIPAIS ALINHAMENTOS:\n✓ Experiência direta em logística, stocks e armazém\n✓ Disponibilidade imediata em Portugal (diferencial)\n✓ Carta de condução A/B\n✓ Conferência, recebimento e expedição\n✓ Competências em apoio administrativo\n\nRECOMENDAÇÃO: Candidatura altamente recomendada.',
+    entrevista: 'SIMULAÇÃO DE ENTREVISTA\n\nP1: "Fale sobre a sua experiência em logística."\n→ "Tenho 4 anos de experiência operacional. Era responsável por todo o fluxo: recebimento, armazenagem FIFO, separação de pedidos com 99% de acerto e expedição."\n\nP2: "Como lida com pressão?"\n→ "Organizo por prioridade e mantenho comunicação constante com a equipa."\n\nP3: "Por que escolheu Portugal?"\n→ "Estabilidade profissional, visto CPLP e disponibilidade imediata."\n\nDICA: Leve exemplos concretos e reforce disponibilidade imediata.'
+  };
+
+  var currentType = 'carta';
+
+  document.querySelectorAll('.ai-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      currentType = btn.dataset.ai;
+      aiTitle.textContent = titles[currentType];
+      aiInput.value = '';
+      aiOutput.classList.add('hidden');
+      aiResult.textContent = '';
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function () { aiInput.focus(); }, 100);
+    });
+  });
+
+  function closeModal() { modal.classList.add('hidden'); document.body.style.overflow = ''; }
+
+  aiClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !modal.classList.contains('hidden') && !cropOv.classList.contains('active'))
+      closeModal();
+  });
+
+  aiProcess.addEventListener('click', function () {
+    if (!aiInput.value.trim()) {
+      aiInput.style.outline = '2px solid #f87171';
+      aiInput.focus();
+      setTimeout(function () { aiInput.style.outline = ''; }, 1600);
+      return;
+    }
+    aiProcess.disabled = true;
+    aiProcess.innerHTML = '<span>A processar…</span>';
+    setTimeout(function () {
+      aiResult.textContent = responses[currentType];
+      aiOutput.classList.remove('hidden');
+      aiProcess.disabled = false;
+      aiProcess.innerHTML = '<span>Processar com IA</span>';
+      aiOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 1400);
+  });
+
+  aiCopy.addEventListener('click', function () {
+    navigator.clipboard.writeText(aiResult.textContent).then(function () {
+      var o = aiCopy.innerHTML;
+      aiCopy.innerHTML = '✔ Copiado!';
+      setTimeout(function () { aiCopy.innerHTML = o; }, 2000);
+    });
+  });
+}
+</script>
+</body>
+</html>
